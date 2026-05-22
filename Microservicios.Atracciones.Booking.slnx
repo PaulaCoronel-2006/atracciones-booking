@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="Microservicios.Atracciones.Booking.API/Microservicios.Atracciones.Booking.API.csproj" />
+    <Project Path="Microservicios.Atracciones.Booking.Business/Microservicios.Atracciones.Booking.Business.csproj" />
+    <Project Path="Microservicios.Atracciones.Booking.DataAccess/Microservicios.Atracciones.Booking.DataAccess.csproj" />
+    <Project Path="Microservicios.Atracciones.Booking.DataManagement/Microservicios.Atracciones.Booking.DataManagement.csproj" />
+  </Folder>
+  <Folder Name="/test/" />
+</Solution>
