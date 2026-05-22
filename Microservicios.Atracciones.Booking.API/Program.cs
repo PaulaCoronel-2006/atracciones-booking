@@ -15,9 +15,10 @@ builder.Services.AddDataAccessServices(builder.Configuration);
 builder.Services.AddDataManagementServices();
 builder.Services.AddBusinessServices();
 
-builder.Services.AddControllers(options => 
+builder.Services.AddControllers(options =>
 {
     options.Filters.Add<Microservicios.Atracciones.Booking.API.Filters.ApiResponseWrapperFilter>();
+    options.Conventions.Add(new RoutePrefixConvention());
 });
 
 builder.Services.AddEndpointsApiExplorer();
@@ -98,3 +99,24 @@ app.UseAuthorization();
 app.MapControllers();
 
 app.Run();
+
+public class RoutePrefixConvention : Microsoft.AspNetCore.Mvc.ApplicationModels.IApplicationModelConvention
+{
+    public void Apply(Microsoft.AspNetCore.Mvc.ApplicationModels.ApplicationModel application)
+    {
+        foreach (var controller in application.Controllers)
+        {
+            foreach (var selector in controller.Selectors)
+            {
+                if (selector.AttributeRouteModel != null)
+                {
+                    var currentTemplate = selector.AttributeRouteModel.Template;
+                    if (currentTemplate != null && currentTemplate.StartsWith("api/v1/"))
+                    {
+                        selector.AttributeRouteModel.Template = currentTemplate["api/v1/".Length..];
+                    }
+                }
+            }
+        }
+    }
+}
