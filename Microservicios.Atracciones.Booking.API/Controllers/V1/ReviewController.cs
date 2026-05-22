@@ -9,6 +9,7 @@ namespace Microservicios.Atracciones.Booking.API.Controllers.V1;
 
 [ApiController]
 [Route("api/v1/review")]
+[AllowAnonymous]
 public class ReviewController : ControllerBase
 {
     private readonly IReviewService _reviewService;

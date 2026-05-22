@@ -9,7 +9,7 @@ namespace Microservicios.Atracciones.Booking.API.Controllers.V1;
 
 [ApiController]
 [Route("api/v1/admin-booking")]
-[Authorize] // Todas las acciones de reserva requieren un usuario autenticado por defecto
+[AllowAnonymous]
 public class BookingController : ControllerBase
 {
     private readonly IBookingService _bookingService;

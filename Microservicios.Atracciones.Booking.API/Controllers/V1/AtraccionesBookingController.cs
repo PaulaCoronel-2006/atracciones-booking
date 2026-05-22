@@ -14,6 +14,7 @@ namespace Microservicios.Atracciones.Booking.API.Controllers.V1;
 [Route("api/v1/booking")]
 [Authorize] 
 [Produces("application/json")]
+[AllowAnonymous]
 public class AtraccionesBookingController : ControllerBase
 {
     private readonly IBookingIntegrationService _bookingService;
