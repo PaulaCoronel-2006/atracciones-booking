@@ -90,7 +90,7 @@ app.UseSwaggerUI(c =>
 app.UseMiddleware<ExceptionMiddleware>();
 app.UseStaticFiles();
 
-app.UseHttpsRedirection();
+// UseHttpsRedirection omitido: servicio interno detrás de gateway nginx que maneja TLS
 app.UseCors("AllowAll");
 
 app.UseAuthentication();
