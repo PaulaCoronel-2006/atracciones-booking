@@ -57,6 +57,23 @@ public class AtraccionesBookingController : ControllerBase
     }
 
     /// <summary>
+    /// Obtiene los slots de disponibilidad para una modalidad (Product Option ID).
+    /// </summary>
+    [HttpGet("disponibilidad/{optionId:guid}")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ApiResponse<List<DisponibilidadDiariaDto>>>> ObtenerDisponibilidad(Guid optionId, [FromQuery] string? fecha = null)
+    {
+        DateOnly? fechaParsed = null;
+        if (!string.IsNullOrEmpty(fecha) && DateOnly.TryParse(fecha, out var parsed))
+        {
+            fechaParsed = parsed;
+        }
+
+        var result = await _bookingService.ObtenerDisponibilidadAsync(optionId, fechaParsed);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Lista el historial de reservas del usuario autenticado.
     /// </summary>
     [HttpGet("mis-reservas")]
