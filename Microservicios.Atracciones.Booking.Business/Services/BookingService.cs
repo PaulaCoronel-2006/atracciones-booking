@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using FluentValidation;
 using Microservicios.Atracciones.Booking.Business.DTOs.Booking;
 using Microservicios.Atracciones.Booking.Business.Exceptions;
@@ -14,17 +15,20 @@ public class BookingService : IBookingService
     private readonly IInventoryDataService _inventoryData;
     private readonly IValidator<CreateBookingRequest> _createValidator;
     private readonly IValidator<CancelBookingRequest> _cancelValidator;
+    private readonly IConfiguration _configuration;
 
     public BookingService(
         IBookingDataService bookingData,
         IInventoryDataService inventoryData,
         IValidator<CreateBookingRequest> createValidator,
-        IValidator<CancelBookingRequest> cancelValidator)
+        IValidator<CancelBookingRequest> cancelValidator,
+        IConfiguration configuration)
     {
         _bookingData = bookingData;
         _inventoryData = inventoryData;
         _createValidator = createValidator;
         _cancelValidator = cancelValidator;
+        _configuration = configuration;
     }
 
     public async Task<BookingConfirmationResponse> CreateBookingAsync(Guid userId, CreateBookingRequest request)
@@ -44,12 +48,30 @@ public class BookingService : IBookingService
         if (slot.CapacityAvailable < totalPassengers)
             throw new BusinessException($"No hay suficiente disponibilidad. Disponible: {slot.CapacityAvailable}, Solicitado: {totalPassengers}.");
 
-        // En el microservicio desacoplado, la validación de PriceTiers y el cálculo de precios
-        // debería hacerse consultando al servicio de Catálogo (vía gRPC o caché) o 
-        // confiando en los datos del frontend si hay una validación posterior.
-        // Por ahora, asumimos que los precios vienen en el request o los simplificamos.
-        
-        // TODO: Implementar llamada a Catálogo Microservice para validar precios y nombres.
+        // Validación de producto vía gRPC con el microservicio de Catálogo
+        var catalogUrl = _configuration["Grpc:CatalogUrl"] ?? "http://catalog-api:8080";
+        try
+        {
+            using var channel = Grpc.Net.Client.GrpcChannel.ForAddress(catalogUrl);
+            var client = new Microservicios.Atracciones.Catalog.API.Protos.CatalogGrpc.CatalogGrpcClient(channel);
+            
+            var grpcRequest = new Microservicios.Atracciones.Catalog.API.Protos.ValidateProductRequest 
+            { 
+                ProductId = request.AttractionId.ToString() 
+            };
+            
+            var grpcResponse = await client.ValidateProductAsync(grpcRequest);
+            if (!grpcResponse.IsValid)
+            {
+                throw new BusinessException($"El producto/atracción con ID '{request.AttractionId}' no es válido en el catálogo.");
+            }
+            
+            Console.WriteLine($"gRPC: Producto validado con éxito. Nombre: {grpcResponse.Name}, Precio Base: {grpcResponse.Price}");
+        }
+        catch (Exception ex) when (ex is not BusinessException)
+        {
+            Console.WriteLine($"gRPC Warning: No se pudo conectar al microservicio de Catálogo para validar el producto. Error: {ex.Message}");
+        }
         
         decimal totalAmount = request.Passengers.Sum(p => p.UnitPrice * p.Quantity);
         string currencyCode = "USD"; // Debería venir del Catálogo

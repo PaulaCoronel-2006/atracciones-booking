@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option csharp_namespace = "Microservicios.Atracciones.Catalog.API.Protos";
+
+package catalog;
+
+service CatalogGrpc {
+  rpc ValidateProduct (ValidateProductRequest) returns (ValidateProductResponse);
+}
+
+message ValidateProductRequest {
+  string product_id = 1;
+}
+
+message ValidateProductResponse {
+  bool is_valid = 1;
+  string name = 2;
+  double price = 3;
+}
