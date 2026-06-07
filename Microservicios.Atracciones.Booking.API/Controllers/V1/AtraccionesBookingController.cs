@@ -84,21 +84,6 @@ public class AtraccionesBookingController : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("db-info")]
-    [AllowAnonymous]
-    public IActionResult GetDbInfo([FromServices] Microsoft.Extensions.Configuration.IConfiguration config)
-    {
-        var connString = config.GetConnectionString("DefaultConnection");
-        if (string.IsNullOrEmpty(connString))
-            return Ok(new { Message = "No connection string found." });
-            
-        var parts = connString.Split(';');
-        var host = parts.FirstOrDefault(p => p.StartsWith("Host=", StringComparison.OrdinalIgnoreCase));
-        var user = parts.FirstOrDefault(p => p.StartsWith("Username=", StringComparison.OrdinalIgnoreCase) || p.StartsWith("User Id=", StringComparison.OrdinalIgnoreCase));
-        
-        return Ok(new { Host = host, User = user });
-    }
-
     private Guid GetUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
