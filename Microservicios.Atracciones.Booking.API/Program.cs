@@ -107,6 +107,8 @@ var jwtKey = builder.Configuration["Jwt:Key"] ?? "BookingService_Super_Secret_Ke
 var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "BookingService";
 var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "BookingServiceUsers";
 
+Log.Information("JWT Configuration loaded - Issuer: {JwtIssuer}, Audience: {JwtAudience}", jwtIssuer, jwtAudience);
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
