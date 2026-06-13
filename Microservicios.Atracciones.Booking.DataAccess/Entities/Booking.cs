@@ -16,6 +16,7 @@ public class Booking : BaseEntity
     public string? InternalNotes { get; set; }             // Notas del operador
     public DateTime? CancelledAt { get; set; }
     public string? CancelReason { get; set; }
+    public Guid? CorrelationId { get; set; }
 
     // Navegación
     public virtual AvailabilitySlot AvailabilitySlot { get; set; } = null!;

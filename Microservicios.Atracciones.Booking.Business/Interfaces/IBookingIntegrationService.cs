@@ -18,7 +18,7 @@ public interface IBookingIntegrationService
     /// <summary>
     /// Crea una nueva reserva bloqueando cupos en el inventario.
     /// </summary>
-    Task<ApiResponse<AtraccionBookingResponseDto>> CrearReservaAsync(AtraccionBookingRequestDto request, Guid userId);
+    Task<ApiResponse<AtraccionBookingResponseDto>> CrearReservaAsync(AtraccionBookingRequestDto request, Guid userId, Guid? correlationId = null);
 
     /// <summary>
     /// Cancela una reserva existente y libera los cupos.

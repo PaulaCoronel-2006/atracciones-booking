@@ -6,14 +6,51 @@ using Microservicios.Atracciones.Booking.DataManagement;
 using Microservicios.Atracciones.Booking.Business;         
 using Microservicios.Atracciones.Booking.API.Middleware;   
 using Microsoft.OpenApi.Models;
+using MassTransit;
+using Serilog;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Resources;
+
+// Configurar Serilog
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .CreateLogger();
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog();
 
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddDataAccessServices(builder.Configuration);
 builder.Services.AddDataManagementServices();
 builder.Services.AddBusinessServices();
+
+// Configurar MassTransit con RabbitMQ
+builder.Services.AddMassTransit(x =>
+{
+    x.UsingRabbitMq((context, cfg) =>
+    {
+        var rabbitHost = builder.Configuration["RabbitMQ:Host"] ?? "localhost";
+        var rabbitUser = builder.Configuration["RabbitMQ:Username"] ?? "guest";
+        var rabbitPass = builder.Configuration["RabbitMQ:Password"] ?? "guest";
+
+        cfg.Host(rabbitHost, "/", h =>
+        {
+            h.Username(rabbitUser);
+            h.Password(rabbitPass);
+        });
+    });
+});
+
+// Configurar OpenTelemetry Tracing
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .AddSource("Microservicios.Atracciones.Booking")
+        .SetResourceBuilder(ResourceBuilder.CreateDefault().AddService("BookingService"))
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddConsoleExporter());
 
 builder.Services.AddControllers(options =>
 {

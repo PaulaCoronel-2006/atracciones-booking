@@ -4,6 +4,8 @@ using Microservicios.Atracciones.Booking.Business.DTOs.Booking;
 using Microservicios.Atracciones.Booking.Business.Interfaces;
 using Microservicios.Atracciones.Booking.DataAccess.Repositories.Interfaces;
 using Microservicios.Atracciones.Booking.DataManagement.Interfaces;
+using MassTransit;
+using Microservicios.Atracciones.Common.Events;
 
 namespace Microservicios.Atracciones.Booking.Business.Services;
 
@@ -16,15 +18,18 @@ public class BookingIntegrationService : IBookingIntegrationService
     private readonly IInventoryDataService _inventoryData;
     private readonly IUnitOfWork _uow;
     private readonly IConfiguration _configuration;
+    private readonly IPublishEndpoint _publishEndpoint;
 
     public BookingIntegrationService(
         IInventoryDataService inventoryData,
         IUnitOfWork uow,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IPublishEndpoint publishEndpoint)
     {
         _inventoryData = inventoryData;
         _uow = uow;
         _configuration = configuration;
+        _publishEndpoint = publishEndpoint;
     }
 
     // ══════════════════════════════════════════════════
@@ -73,7 +78,7 @@ public class BookingIntegrationService : IBookingIntegrationService
     // TRANSACCIONES: CREAR RESERVA
     // ══════════════════════════════════════════════════
 
-    public async Task<ApiResponse<AtraccionBookingResponseDto>> CrearReservaAsync(AtraccionBookingRequestDto request, Guid userId)
+    public async Task<ApiResponse<AtraccionBookingResponseDto>> CrearReservaAsync(AtraccionBookingRequestDto request, Guid userId, Guid? correlationId = null)
     {
         var slot = await _uow.AvailabilitySlots.Query()
             .FirstOrDefaultAsync(s => s.Id == request.SlotId && s.IsActive);
@@ -133,6 +138,7 @@ public class BookingIntegrationService : IBookingIntegrationService
             StatusId = 2, // Confirmed
             TotalAmount = Math.Round(totalAmount, 2),
             CurrencyCode = currency,
+            CorrelationId = correlationId,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -151,6 +157,28 @@ public class BookingIntegrationService : IBookingIntegrationService
             slot.UpdatedAt = DateTime.UtcNow;
 
             await _uow.CompleteAsync();
+
+            try
+            {
+                await _publishEndpoint.Publish(new BookingCreatedEvent
+                {
+                    BookingId = booking.Id,
+                    UserId = userId,
+                    PnrCode = booking.PnrCode,
+                    TotalAmount = booking.TotalAmount,
+                    CurrencyCode = booking.CurrencyCode,
+                    CreatedAt = booking.CreatedAt,
+                    AttractionName = request.AttractionName ?? "Attraction",
+                    CustomerName = request.Billing?.CustomerName ?? request.ContactName ?? "Cliente de Atracciones",
+                    TaxId = request.Billing?.TaxId ?? string.Empty,
+                    Email = request.Billing?.Email ?? request.ContactEmail ?? string.Empty,
+                    Address = request.Billing?.Address ?? string.Empty
+                });
+            }
+            catch (Exception ex)
+            {
+                // Evitamos bloquear el retorno de la reserva si falla el bróker temporalmente
+            }
 
             return ApiResponse<AtraccionBookingResponseDto>.Ok(new AtraccionBookingResponseDto
             {

@@ -21,6 +21,7 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
     <PackageReference Include="Google.Protobuf" Version="3.26.1" />
+    <PackageReference Include="MassTransit" Version="8.3.6" />
   </ItemGroup>
   
   <ItemGroup>
