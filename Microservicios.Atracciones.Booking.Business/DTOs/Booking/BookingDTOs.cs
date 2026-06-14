@@ -72,7 +72,6 @@ public class BookingSummaryResponse
     public string PnrCode { get; set; } = string.Empty;
     public string AttractionName { get; set; } = string.Empty;
     public string StatusName { get; set; } = string.Empty;
-    public decimal totalAmount { get; set; }
     public string CurrencyCode { get; set; } = "USD";
     public DateOnly SlotDate { get; set; }
     public DateTime CreatedAt { get; set; }
@@ -84,8 +83,7 @@ public class BookingSummaryResponse
     public bool CanReview { get; set; }
     public List<BookingTicketSummary> Tickets { get; set; } = [];
 
-    // Cambiado de totalAmount (minúscula) a TotalAmount (mayúscula) para consistencia si es necesario
-    public decimal TotalAmount { get => totalAmount; set => totalAmount = value; }
+    public decimal TotalAmount { get; set; }
 }
 
 public class BookingTicketSummary
