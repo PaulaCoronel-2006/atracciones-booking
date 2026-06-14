@@ -64,7 +64,7 @@ public class BookingDetailConfiguration : IEntityTypeConfiguration<BookingDetail
         // Snapshots
         builder.Property(d => d.AttractionNameSnapshot).HasMaxLength(200).IsRequired();
         builder.Property(d => d.OptionNameSnapshot).HasMaxLength(200).IsRequired();
-        builder.Property(d => d.TierNameSnapshot).HasMaxLength(100).IsRequired();
+        builder.Property(d => d.TierNameSnapshot).HasColumnName("ticket_category_name").HasMaxLength(100).IsRequired();
         builder.Property(d => d.CurrencyCode).HasMaxLength(3).HasDefaultValue("USD");
         
         // Referencias lógicas
