@@ -80,7 +80,7 @@ public class BookingIntegrationService : IBookingIntegrationService
 
     public async Task<ApiResponse<AtraccionBookingResponseDto>> CrearReservaAsync(AtraccionBookingRequestDto request, Guid userId, Guid? correlationId = null)
     {
-        var slot = await _uow.AvailabilitySlots.Query()
+        var slot = await _uow.AvailabilitySlots.Query(false)
             .FirstOrDefaultAsync(s => s.Id == request.SlotId && s.IsActive);
 
         if (slot == null)
@@ -200,7 +200,7 @@ public class BookingIntegrationService : IBookingIntegrationService
 
     public async Task<ApiResponse<bool>> CancelarReservaAsync(Guid bookingId, Guid userId)
     {
-        var booking = await _uow.Bookings.Query()
+        var booking = await _uow.Bookings.Query(false)
             .Include(b => b.AvailabilitySlot)
             .FirstOrDefaultAsync(b => b.Id == bookingId && b.UserId == userId);
 
