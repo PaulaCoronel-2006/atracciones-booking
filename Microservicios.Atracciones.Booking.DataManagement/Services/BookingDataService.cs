@@ -84,7 +84,8 @@ public class BookingDataService : IBookingDataService
     {
         IQueryable<BookingEntity> query = _uow.Bookings.Query()
             .Include(b => b.Status)
-            .Include(b => b.AvailabilitySlot);
+            .Include(b => b.AvailabilitySlot)
+            .Include(b => b.Details);
 
         // TODO: En el microservicio desacoplado, el filtrado por ManagedById (Partner)
         // requeriría una lista de AttractionIds que el partner administra, obtenida del servicio de Catálogo.

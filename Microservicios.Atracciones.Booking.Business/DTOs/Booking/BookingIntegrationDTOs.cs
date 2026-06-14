@@ -214,7 +214,9 @@ public class AtraccionBookingRequestDto
                         FirstName = p.FirstName,
                         LastName = p.LastName,
                         DocumentNumber = p.DocumentNumber ?? string.Empty,
-                        DocumentType = p.DocumentType
+                        DocumentType = p.DocumentType,
+                        UnitPrice = p.UnitPrice,
+                        PriceTierLabel = p.PriceTierLabel
                     });
                 }
             }
@@ -244,6 +246,8 @@ public class PassengerBookingDto
     public string? DocumentNumber { get; set; }
     public string? DocumentType { get; set; }
     public int Quantity { get; set; } = 1;
+    public decimal UnitPrice { get; set; }
+    public string? PriceTierLabel { get; set; }
 }
 
 public class BillingInfo
