@@ -71,6 +71,11 @@ public class AtraccionDbContext : DbContext
 
             foreach (var property in entity.GetProperties())
             {
+                if (entityName == "BookingDetail" && property.Name == "TierNameSnapshot")
+                {
+                    property.SetColumnName("ticket_category_name");
+                    continue;
+                }
                 var propName = ToSnakeCase(property.Name);
                 property.SetColumnName(propName);
             }
