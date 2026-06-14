@@ -177,7 +177,7 @@ public class BookingIntegrationService : IBookingIntegrationService
             }
             catch (Exception ex)
             {
-                // Evitamos bloquear el retorno de la reserva si falla el bróker temporalmente
+                Console.WriteLine("Error al publicar BookingCreatedEvent en RabbitMQ a traves de MassTransit: " + ex.ToString());
             }
 
             return ApiResponse<AtraccionBookingResponseDto>.Ok(new AtraccionBookingResponseDto
