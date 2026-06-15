@@ -27,11 +27,15 @@ public class IdempotentFilter : IAsyncActionFilter
     {
         var request = context.HttpContext.Request;
 
-        // 1. Exigir la cabecera X-Idempotency-Key
-        if (!request.Headers.TryGetValue(HeaderName, out var headerValue) || string.IsNullOrEmpty(headerValue))
+        // 1. Exigir la cabecera X-Idempotency-Key o Idempotency-Key
+        Microsoft.Extensions.Primitives.StringValues headerValue;
+        bool hasHeader = request.Headers.TryGetValue("X-Idempotency-Key", out headerValue) || 
+                         request.Headers.TryGetValue("Idempotency-Key", out headerValue);
+
+        if (!hasHeader || string.IsNullOrEmpty(headerValue))
         {
             context.Result = new BadRequestObjectResult(
-                ApiResponse<object>.Fail($"La cabecera '{HeaderName}' es obligatoria para este endpoint."));
+                ApiResponse<object>.Fail("La cabecera 'X-Idempotency-Key' o 'Idempotency-Key' es obligatoria para este endpoint."));
             return;
         }
 

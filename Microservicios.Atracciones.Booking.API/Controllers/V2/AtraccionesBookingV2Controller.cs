@@ -40,7 +40,14 @@ public class AtraccionesBookingV2Controller : ControllerBase
         request.Normalize();
 
         var userId = GetUserId();
-        var idempotencyKey = Guid.Parse(Request.Headers["X-Idempotency-Key"]!);
+        
+        string? rawIdempotencyKey = Request.Headers["X-Idempotency-Key"];
+        if (string.IsNullOrEmpty(rawIdempotencyKey))
+        {
+            rawIdempotencyKey = Request.Headers["Idempotency-Key"];
+        }
+        
+        var idempotencyKey = Guid.Parse(rawIdempotencyKey!);
 
         var result = await _bookingService.CrearReservaAsync(request, userId, idempotencyKey);
 
