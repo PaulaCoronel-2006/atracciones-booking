@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microservicios.Atracciones.Booking.API.Filters;
 using Microservicios.Atracciones.Booking.Business.DTOs.Booking;
 using Microservicios.Atracciones.Booking.Business.Interfaces;
 using Microservicios.Atracciones.Booking.DataAccess.Repositories.Interfaces;
@@ -32,54 +33,20 @@ public class AtraccionesBookingV2Controller : ControllerBase
     /// Crea una nueva reserva bloqueando el inventario de cupos. Requiere cabecera de idempotencia.
     /// </summary>
     [HttpPost]
+    [TypeFilter(typeof(IdempotentFilter))]
     public async Task<ActionResult<ApiResponse<AtraccionBookingResponseDto>>> CrearReserva(
-        [FromBody] AtraccionBookingRequestDto request,
-        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKeyHeader)
+        [FromBody] AtraccionBookingRequestDto request)
     {
-        if (string.IsNullOrEmpty(idempotencyKeyHeader))
-        {
-            return BadRequest(ApiResponse<AtraccionBookingResponseDto>.Fail("La cabecera 'Idempotency-Key' es obligatoria para este endpoint."));
-        }
-
-        if (!Guid.TryParse(idempotencyKeyHeader, out var idempotencyKey))
-        {
-            return BadRequest(ApiResponse<AtraccionBookingResponseDto>.Fail("El valor de la cabecera 'Idempotency-Key' debe ser un UUID válido."));
-        }
-
         request.Normalize();
 
         var userId = GetUserId();
-        
-        // 1. Verificar idempotencia buscando por correlation_id
-        var existingBooking = await _uow.Bookings.Query()
-            .Include(b => b.AvailabilitySlot)
-            .FirstOrDefaultAsync(b => b.CorrelationId == idempotencyKey && b.UserId == userId);
+        var idempotencyKey = Guid.Parse(Request.Headers["X-Idempotency-Key"]!);
 
-        if (existingBooking != null)
-        {
-            Response.Headers.Append("X-Cache-Lookup", "HIT");
-            
-            var responseDto = new AtraccionBookingResponseDto
-            {
-                BookingId = existingBooking.Id,
-                PnrCode = existingBooking.PnrCode,
-                Status = existingBooking.StatusId == 4 ? "Cancelled" : "Confirmed",
-                TotalAmount = existingBooking.TotalAmount,
-                Currency = existingBooking.CurrencyCode,
-                ActivityDate = existingBooking.AvailabilitySlot.SlotDate.ToDateTime(existingBooking.AvailabilitySlot.StartTime),
-                AttractionName = request.AttractionName ?? "Attraction"
-            };
-
-            return Ok(ApiResponse<AtraccionBookingResponseDto>.Ok(responseDto, "Reserva recuperada por idempotencia."));
-        }
-
-        // 2. Proceder a crear la reserva pasándole el correlation_id
         var result = await _bookingService.CrearReservaAsync(request, userId, idempotencyKey);
 
         if (!result.Success)
             return BadRequest(result);
 
-        Response.Headers.Append("X-Cache-Lookup", "MISS");
         return Ok(result);
     }
 

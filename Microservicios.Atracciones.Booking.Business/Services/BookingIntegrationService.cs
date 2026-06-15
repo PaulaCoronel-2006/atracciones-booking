@@ -90,6 +90,33 @@ public class BookingIntegrationService : IBookingIntegrationService
         if (slot.CapacityAvailable < totalTickets)
             return ApiResponse<AtraccionBookingResponseDto>.Fail($"No hay cupos suficientes. Cupos restantes: {slot.CapacityAvailable}");
 
+        var attractionId = slot.ProductId;
+        string attractionName = request.AttractionName ?? "Attraction";
+
+        // gRPC Call to Catalog Service
+        var catalogUrl = _configuration["Grpc:CatalogUrl"] ?? "http://catalog-api:8080";
+        try
+        {
+            using var channel = Grpc.Net.Client.GrpcChannel.ForAddress(catalogUrl);
+            var client = new Microservicios.Atracciones.Catalog.API.Protos.CatalogGrpc.CatalogGrpcClient(channel);
+            
+            var grpcRequest = new Microservicios.Atracciones.Catalog.API.Protos.ValidateProductRequest 
+            { 
+                ProductId = attractionId.ToString() 
+            };
+            
+            var grpcResponse = await client.ValidateProductAsync(grpcRequest);
+            if (grpcResponse != null && !string.IsNullOrEmpty(grpcResponse.Name))
+            {
+                attractionName = grpcResponse.Name;
+                Console.WriteLine($"gRPC Integration: Producto validado con éxito. Nombre: {grpcResponse.Name}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"gRPC Warning (Integration): No se pudo conectar al microservicio de Catálogo para validar el producto. Error: {ex.Message}");
+        }
+
         decimal totalAmount = 0;
         var details = new List<DataAccess.Entities.BookingDetail>();
         string currency = request.Currency ?? "USD";
@@ -103,7 +130,7 @@ public class BookingIntegrationService : IBookingIntegrationService
             details.Add(new DataAccess.Entities.BookingDetail
             {
                 Id = Guid.NewGuid(),
-                ProductOptionId = request.ProductOptionId,
+                ProductOptionId = request.ProductOptionId ?? Guid.Empty,
                 PriceTierId = t.PriceTierId ?? Guid.Empty,
                 FirstName = t.FirstName,
                 LastName = t.LastName,
@@ -112,7 +139,7 @@ public class BookingIntegrationService : IBookingIntegrationService
                 Quantity = 1,
                 UnitPrice = t.UnitPrice,
                 CurrencyCode = currency,
-                AttractionNameSnapshot = request.AttractionName ?? "Attraction",
+                AttractionNameSnapshot = attractionName,
                 OptionNameSnapshot = request.ProductTitle ?? "Option",
                 TierNameSnapshot = t.PriceTierLabel ?? "Ticket"
             });
@@ -133,7 +160,7 @@ public class BookingIntegrationService : IBookingIntegrationService
             Id = Guid.NewGuid(),
             PnrCode = GeneratePnrCode(),
             UserId = userId,
-            AttractionId = request.AttractionId,
+            AttractionId = attractionId,
             SlotId = slot.Id,
             StatusId = 2, // Confirmed
             TotalAmount = Math.Round(totalAmount, 2),
@@ -168,7 +195,7 @@ public class BookingIntegrationService : IBookingIntegrationService
                     TotalAmount = booking.TotalAmount,
                     CurrencyCode = booking.CurrencyCode,
                     CreatedAt = booking.CreatedAt,
-                    AttractionName = request.AttractionName ?? "Attraction",
+                    AttractionName = attractionName,
                     CustomerName = request.Billing?.CustomerName ?? request.ContactName ?? "Cliente de Atracciones",
                     TaxId = request.Billing?.TaxId ?? string.Empty,
                     Email = request.Billing?.Email ?? request.ContactEmail ?? string.Empty,
@@ -188,7 +215,7 @@ public class BookingIntegrationService : IBookingIntegrationService
                 TotalAmount = totalAmount,
                 Currency = booking.CurrencyCode,
                 ActivityDate = slot.SlotDate.ToDateTime(slot.StartTime),
-                AttractionName = request.AttractionName ?? "Attraction"
+                AttractionName = attractionName
             }, "Reserva creada exitosamente.");
         }
         catch (Exception ex)

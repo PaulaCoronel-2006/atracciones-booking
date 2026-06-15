@@ -175,8 +175,8 @@ public class AtraccionBookingRequestDto
     public List<TicketBookingDetailDto>? Tickets { get; set; }
 
     // Snapshots del catálogo para persistencia autónoma
-    public Guid AttractionId { get; set; }
-    public Guid ProductOptionId { get; set; }
+    public Guid? AttractionId { get; set; }
+    public Guid? ProductOptionId { get; set; }
     public string? AttractionName { get; set; }
     public string? ProductTitle { get; set; }
     public string? Currency { get; set; }
