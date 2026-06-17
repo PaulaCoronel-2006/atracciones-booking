@@ -70,6 +70,9 @@ public class BookingSummaryResponse
 {
     public Guid Id { get; set; }
     public string PnrCode { get; set; } = string.Empty;
+    public Guid AttractionId { get; set; }
+    public Guid SlotId { get; set; }
+    public Guid UserId { get; set; }
     public string AttractionName { get; set; } = string.Empty;
     public string StatusName { get; set; } = string.Empty;
     public string CurrencyCode { get; set; } = "USD";
@@ -98,6 +101,9 @@ public class BookingDetailResponse
 {
     public Guid Id { get; set; }
     public string PnrCode { get; set; } = string.Empty;
+    public Guid AttractionId { get; set; }
+    public Guid SlotId { get; set; }
+    public Guid UserId { get; set; }
     public string StatusName { get; set; } = string.Empty;
     public decimal TotalAmount { get; set; }
     public string CurrencyCode { get; set; } = "USD";

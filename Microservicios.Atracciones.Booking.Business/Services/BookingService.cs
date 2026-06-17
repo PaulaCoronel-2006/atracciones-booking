@@ -209,6 +209,9 @@ public class BookingService : IBookingService
     {
         Id = b.Id,
         PnrCode = b.PnrCode,
+        AttractionId = b.AttractionId,
+        SlotId = b.SlotId,
+        UserId = b.UserId,
         StatusName = b.StatusName,
         TotalAmount = b.TotalAmount,
         CurrencyCode = b.CurrencyCode,
@@ -232,6 +235,9 @@ public class BookingService : IBookingService
     {
         Id = b.Id,
         PnrCode = b.PnrCode,
+        AttractionId = b.AttractionId,
+        SlotId = b.SlotId,
+        UserId = b.UserId,
         AttractionName = b.AttractionName,
         StatusName = b.StatusName,
         StatusId = b.StatusId,
