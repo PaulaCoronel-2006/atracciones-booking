@@ -278,8 +278,146 @@ public class BookingIntegrationService : IBookingIntegrationService
         return ApiResponse<List<AtraccionBookingResponseDto>>.Ok(dtos);
     }
 
+    public async Task<ApiResponse<int>> GenerarSlotsMasivoAsync(GenerateSlotsRequestDto request)
+    {
+        if (!DateOnly.TryParse(request.StartDate, out var startDate) ||
+            !DateOnly.TryParse(request.EndDate, out var endDate))
+        {
+            return ApiResponse<int>.Fail("Formato de fecha inválido. Utilice yyyy-MM-dd.");
+        }
+
+        if (!TimeOnly.TryParse(request.StartTime, out var startTime))
+        {
+            return ApiResponse<int>.Fail("Formato de hora de inicio inválido. Utilice HH:mm.");
+        }
+
+        TimeOnly? endTime = null;
+        if (!string.IsNullOrEmpty(request.EndTime) && TimeOnly.TryParse(request.EndTime, out var parsedEndTime))
+        {
+            endTime = parsedEndTime;
+        }
+
+        var daysOfWeekSet = request.DaysOfWeek != null ? new HashSet<int>(request.DaysOfWeek) : new HashSet<int>();
+        bool selectAllDays = daysOfWeekSet.Count == 0;
+
+        var existingSlots = await _uow.AvailabilitySlots.Query(false)
+            .Where(s => s.ProductId == request.ProductId &&
+                        s.SlotDate >= startDate &&
+                        s.SlotDate <= endDate &&
+                        s.StartTime == startTime)
+            .ToListAsync();
+
+        var existingSlotsMap = existingSlots.ToDictionary(s => s.SlotDate, s => s);
+        int slotsCreatedOrUpdated = 0;
+
+        for (var date = startDate; date <= endDate; date = date.AddDays(1))
+        {
+            int dayOfWeekVal = (int)date.DayOfWeek;
+            if (selectAllDays || daysOfWeekSet.Contains(dayOfWeekVal))
+            {
+                if (existingSlotsMap.TryGetValue(date, out var existingSlot))
+                {
+                    if (!existingSlot.IsActive)
+                    {
+                        existingSlot.IsActive = true;
+                        existingSlot.CapacityTotal = request.Capacity;
+                        existingSlot.CapacityAvailable = request.Capacity;
+                        existingSlot.EndTime = endTime;
+                        existingSlot.UpdatedAt = DateTime.UtcNow;
+                        _uow.AvailabilitySlots.Update(existingSlot);
+                        slotsCreatedOrUpdated++;
+                    }
+                }
+                else
+                {
+                    var newSlot = new DataAccess.Entities.AvailabilitySlot
+                    {
+                        Id = Guid.NewGuid(),
+                        ProductId = request.ProductId,
+                        SlotDate = date,
+                        StartTime = startTime,
+                        EndTime = endTime,
+                        CapacityTotal = request.Capacity,
+                        CapacityAvailable = request.Capacity,
+                        IsActive = true,
+                        Notes = "Generado masivamente",
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    await _uow.AvailabilitySlots.AddAsync(newSlot);
+                    slotsCreatedOrUpdated++;
+                }
+            }
+        }
+
+        if (slotsCreatedOrUpdated > 0)
+        {
+            await _uow.CompleteAsync();
+        }
+
+        return ApiResponse<int>.Ok(slotsCreatedOrUpdated, $"Se generaron o reactivaron {slotsCreatedOrUpdated} slots de disponibilidad.");
+    }
+
+    public async Task<ApiResponse<int>> EliminarSlotsEnLoteAsync(BulkDeleteSlotsRequestDto request)
+    {
+        if (!DateOnly.TryParse(request.StartDate, out var startDate) ||
+            !DateOnly.TryParse(request.EndDate, out var endDate))
+        {
+            return ApiResponse<int>.Fail("Formato de fecha inválido. Utilice yyyy-MM-dd.");
+        }
+
+        var slotsToDelete = await _uow.AvailabilitySlots.Query(false)
+            .Where(s => s.ProductId == request.ProductId &&
+                        s.SlotDate >= startDate &&
+                        s.SlotDate <= endDate)
+            .ToListAsync();
+
+        int affectedCount = 0;
+        if (slotsToDelete.Count > 0)
+        {
+            var slotIds = slotsToDelete.Select(s => s.Id).ToList();
+            var slotsWithBookings = await _uow.Bookings.Query()
+                .Where(b => slotIds.Contains(b.SlotId))
+                .Select(b => b.SlotId)
+                .Distinct()
+                .ToListAsync();
+
+            var slotsWithBookingsSet = new HashSet<Guid>(slotsWithBookings);
+            var physicalDeletes = new List<DataAccess.Entities.AvailabilitySlot>();
+
+            foreach (var slot in slotsToDelete)
+            {
+                if (slotsWithBookingsSet.Contains(slot.Id))
+                {
+                    if (slot.IsActive)
+                    {
+                        slot.IsActive = false;
+                        slot.UpdatedAt = DateTime.UtcNow;
+                        _uow.AvailabilitySlots.Update(slot);
+                        affectedCount++;
+                    }
+                }
+                else
+                {
+                    physicalDeletes.Add(slot);
+                    affectedCount++;
+                }
+            }
+
+            if (physicalDeletes.Count > 0)
+            {
+                _uow.AvailabilitySlots.DeleteRange(physicalDeletes);
+            }
+
+            await _uow.CompleteAsync();
+        }
+
+        return ApiResponse<int>.Ok(affectedCount, $"Se eliminaron o desactivaron {affectedCount} slots de disponibilidad.");
+    }
+
     private string GeneratePnrCode()
     {
         return Guid.NewGuid().ToString("N").Substring(0, 8).ToUpper();
     }
 }
+

@@ -84,6 +84,32 @@ public class AtraccionesBookingController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Genera slots masivamente en un rango de fechas.
+    /// </summary>
+    [HttpPost("slots/generate")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ApiResponse<int>>> GenerarSlotsMasivo([FromBody] GenerateSlotsRequestDto request)
+    {
+        var result = await _bookingService.GenerarSlotsMasivoAsync(request);
+        if (!result.Success)
+            return BadRequest(result);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Elimina slots en lote para una opción de producto y rango de fechas.
+    /// </summary>
+    [HttpPost("slots/bulk-delete")]
+    [AllowAnonymous]
+    public async Task<ActionResult<ApiResponse<int>>> EliminarSlotsEnLote([FromBody] BulkDeleteSlotsRequestDto request)
+    {
+        var result = await _bookingService.EliminarSlotsEnLoteAsync(request);
+        if (!result.Success)
+            return BadRequest(result);
+        return Ok(result);
+    }
+
     private Guid GetUserId()
     {
         var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
@@ -95,3 +121,4 @@ public class AtraccionesBookingController : ControllerBase
         return Guid.Parse(userIdClaim);
     }
 }
+

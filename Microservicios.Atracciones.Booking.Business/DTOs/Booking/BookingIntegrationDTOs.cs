@@ -297,3 +297,22 @@ public class AtraccionBookingResponseDto
     public string? AttractionImage { get; set; }
     public int TotalPassengers { get; set; }
 }
+
+public class GenerateSlotsRequestDto
+{
+    public Guid ProductId { get; set; }
+    public string StartDate { get; set; } = string.Empty;
+    public string EndDate { get; set; } = string.Empty;
+    public string StartTime { get; set; } = string.Empty;
+    public string EndTime { get; set; } = string.Empty;
+    public short Capacity { get; set; }
+    public System.Collections.Generic.List<int> DaysOfWeek { get; set; } = [];
+}
+
+public class BulkDeleteSlotsRequestDto
+{
+    public Guid ProductId { get; set; }
+    public string StartDate { get; set; } = string.Empty;
+    public string EndDate { get; set; } = string.Empty;
+}
+

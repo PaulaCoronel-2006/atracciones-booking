@@ -29,4 +29,15 @@ public interface IBookingIntegrationService
     /// Lista las reservas realizadas por un usuario.
     /// </summary>
     Task<ApiResponse<List<AtraccionBookingResponseDto>>> ListarMisReservasAsync(Guid userId);
+
+    /// <summary>
+    /// Genera slots masivamente en un rango de fechas.
+    /// </summary>
+    Task<ApiResponse<int>> GenerarSlotsMasivoAsync(GenerateSlotsRequestDto request);
+
+    /// <summary>
+    /// Elimina slots en lote para una opción de producto y rango de fechas.
+    /// </summary>
+    Task<ApiResponse<int>> EliminarSlotsEnLoteAsync(BulkDeleteSlotsRequestDto request);
 }
+
