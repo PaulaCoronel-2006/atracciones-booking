@@ -280,21 +280,37 @@ public class BookingIntegrationService : IBookingIntegrationService
 
     public async Task<ApiResponse<int>> GenerarSlotsMasivoAsync(GenerateSlotsRequestDto request)
     {
-        if (!DateOnly.TryParse(request.StartDate, out var startDate) ||
-            !DateOnly.TryParse(request.EndDate, out var endDate))
+        DateOnly startDate;
+        DateOnly endDate;
+        if (!DateOnly.TryParseExact(request.StartDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out startDate) &&
+            !DateOnly.TryParse(request.StartDate, out startDate))
         {
-            return ApiResponse<int>.Fail("Formato de fecha inválido. Utilice yyyy-MM-dd.");
+            return ApiResponse<int>.Fail("Formato de fecha de inicio inválido. Utilice yyyy-MM-dd.");
         }
 
-        if (!TimeOnly.TryParse(request.StartTime, out var startTime))
+        if (!DateOnly.TryParseExact(request.EndDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out endDate) &&
+            !DateOnly.TryParse(request.EndDate, out endDate))
+        {
+            return ApiResponse<int>.Fail("Formato de fecha de fin inválido. Utilice yyyy-MM-dd.");
+        }
+
+        TimeOnly startTime;
+        if (!TimeOnly.TryParseExact(request.StartTime, "HH:mm", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out startTime) &&
+            !TimeOnly.TryParseExact(request.StartTime, "H:mm", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out startTime) &&
+            !TimeOnly.TryParse(request.StartTime, out startTime))
         {
             return ApiResponse<int>.Fail("Formato de hora de inicio inválido. Utilice HH:mm.");
         }
 
         TimeOnly? endTime = null;
-        if (!string.IsNullOrEmpty(request.EndTime) && TimeOnly.TryParse(request.EndTime, out var parsedEndTime))
+        if (!string.IsNullOrEmpty(request.EndTime))
         {
-            endTime = parsedEndTime;
+            if (TimeOnly.TryParseExact(request.EndTime, "HH:mm", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out var parsedEndTime) ||
+                TimeOnly.TryParseExact(request.EndTime, "H:mm", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out parsedEndTime) ||
+                TimeOnly.TryParse(request.EndTime, out parsedEndTime))
+            {
+                endTime = parsedEndTime;
+            }
         }
 
         var daysOfWeekSet = request.DaysOfWeek != null ? new HashSet<int>(request.DaysOfWeek) : new HashSet<int>();
@@ -360,10 +376,18 @@ public class BookingIntegrationService : IBookingIntegrationService
 
     public async Task<ApiResponse<int>> EliminarSlotsEnLoteAsync(BulkDeleteSlotsRequestDto request)
     {
-        if (!DateOnly.TryParse(request.StartDate, out var startDate) ||
-            !DateOnly.TryParse(request.EndDate, out var endDate))
+        DateOnly startDate;
+        DateOnly endDate;
+        if (!DateOnly.TryParseExact(request.StartDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out startDate) &&
+            !DateOnly.TryParse(request.StartDate, out startDate))
         {
-            return ApiResponse<int>.Fail("Formato de fecha inválido. Utilice yyyy-MM-dd.");
+            return ApiResponse<int>.Fail("Formato de fecha de inicio inválido. Utilice yyyy-MM-dd.");
+        }
+
+        if (!DateOnly.TryParseExact(request.EndDate, "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out endDate) &&
+            !DateOnly.TryParse(request.EndDate, out endDate))
+        {
+            return ApiResponse<int>.Fail("Formato de fecha de fin inválido. Utilice yyyy-MM-dd.");
         }
 
         var slotsToDelete = await _uow.AvailabilitySlots.Query(false)
