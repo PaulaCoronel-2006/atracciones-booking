@@ -222,6 +222,10 @@ public class BookingIntegrationService : IBookingIntegrationService
                 AttractionName = attractionName
             }, "Reserva creada exitosamente.");
         }
+        catch (DbUpdateConcurrencyException)
+        {
+            return ApiResponse<AtraccionBookingResponseDto>.Fail("No se pudo completar la reserva porque la disponibilidad cambió concurrentemente o ya no hay cupos suficientes. Por favor, reintente.");
+        }
         catch (Exception ex)
         {
             var errorMsg = ex.InnerException != null ? ex.InnerException.Message : ex.Message;

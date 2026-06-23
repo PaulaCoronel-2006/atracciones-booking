@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+ï»¿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microservicios.Atracciones.Booking.DataAccess.Entities;
 
@@ -49,6 +49,7 @@ public class AvailabilitySlotConfiguration : IEntityTypeConfiguration<Availabili
         builder.HasIndex(s => new { s.ProductId, s.SlotDate, s.StartTime }).IsUnique();
 
         builder.Property(s => s.IsActive).HasDefaultValue(true);
+        builder.Property(s => s.CapacityAvailable).IsConcurrencyToken();
         builder.Property(s => s.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         builder.Property(s => s.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
     }
@@ -92,7 +93,7 @@ public class ReviewConfiguration : IEntityTypeConfiguration<Review>
                .HasForeignKey(m => m.ReviewId)
                .OnDelete(DeleteBehavior.Cascade);
                
-        // Referencia lógica
+        // Referencia lï¿½gica
         builder.Property(r => r.UserId).IsRequired();
     }
 }
