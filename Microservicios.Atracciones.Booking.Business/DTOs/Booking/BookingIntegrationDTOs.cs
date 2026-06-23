@@ -122,6 +122,7 @@ public class DisponibilidadDiariaDto
 
     /// <summary>Horarios disponibles en ese día con su detalle individual</summary>
     public List<HorarioDto> Horarios { get; set; } = [];
+    public List<HorarioDto> Slots { get; set; } = [];
 }
 
 /// <summary>Slot individual de un horario (para uso en el frontend de atracciones)</summary>

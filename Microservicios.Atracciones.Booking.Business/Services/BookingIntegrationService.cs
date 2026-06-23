@@ -56,18 +56,22 @@ public class BookingIntegrationService : IBookingIntegrationService
 
         var disponibilidadPorDia = slots
             .GroupBy(s => s.SlotDate)
-            .Select(g => new DisponibilidadDiariaDto
-            {
-                Fecha = g.Key.ToString("yyyy-MM-dd"),
-                CuposDisponibles = g.Sum(s => s.CapacityAvailable),
-                Horarios = g.Select(s => new HorarioDto
+            .Select(g => {
+                var horariosList = g.Select(s => new HorarioDto
                 {
                     SlotId = s.Id,
                     HoraInicio = s.StartTime.ToString(@"HH\:mm"),
                     HoraFin = s.EndTime?.ToString(@"HH\:mm"),
                     CuposDisponibles = s.CapacityAvailable,
                     CuposTotales = s.CapacityTotal
-                }).ToList()
+                }).ToList();
+                return new DisponibilidadDiariaDto
+                {
+                    Fecha = g.Key.ToString("yyyy-MM-dd"),
+                    CuposDisponibles = g.Sum(s => s.CapacityAvailable),
+                    Horarios = horariosList,
+                    Slots = horariosList
+                };
             })
             .ToList();
 
