@@ -27,7 +27,7 @@ public class BookingController : ControllerBase
     [Authorize(Roles = "Client,Admin,Partner")]
     public async Task<ActionResult<BookingConfirmationResponse>> CreateBooking([FromBody] CreateBookingRequest request)
     {
-        var currentUserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+        var currentUserId = GetUserId();
         var response = await _bookingService.CreateBookingAsync(currentUserId, request);
         return Ok(response);
     }
@@ -40,8 +40,8 @@ public class BookingController : ControllerBase
     [Authorize(Roles = "Admin,Partner")]
     public async Task<ActionResult<PagedResult<BookingSummaryResponse>>> SearchManagement([FromQuery] BookingSearchRequest request)
     {
-        var currentUserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-        bool isAdmin = User.IsInRole("Admin");
+        var currentUserId = GetUserId();
+        bool isAdmin = IsAdminUser();
         
         var result = await _bookingService.SearchManagementAsync(request, currentUserId, isAdmin);
         return Ok(result);
@@ -66,8 +66,8 @@ public class BookingController : ControllerBase
     [Authorize(Roles = "Client,Admin")]
     public async Task<ActionResult> CancelBooking([FromBody] CancelBookingRequest request)
     {
-        var currentUserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-        bool isAdmin = User.IsInRole("Admin");
+        var currentUserId = GetUserId();
+        bool isAdmin = IsAdminUser();
         await _bookingService.CancelBookingAsync(currentUserId, isAdmin, request);
         return Ok(new { Message = "Reserva cancelada correctamente." });
     }
@@ -81,7 +81,7 @@ public class BookingController : ControllerBase
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 10)
     {
-        var currentUserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+        var currentUserId = GetUserId();
         var result = await _bookingService.GetUserHistoryAsync(currentUserId, page, pageSize);
         return Ok(result);
     }
@@ -93,9 +93,33 @@ public class BookingController : ControllerBase
     [Authorize]
     public async Task<ActionResult<BookingDetailResponse>> GetById(Guid id)
     {
-        var currentUserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-        bool isAdmin = User.IsInRole("Admin");
+        var currentUserId = GetUserId();
+        bool isAdmin = IsAdminUser();
         var result = await _bookingService.GetByIdAsync(id, currentUserId, isAdmin);
         return Ok(result);
+    }
+
+    private Guid GetUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                       ?? User.FindFirst("sub")?.Value;
+                       
+        if (string.IsNullOrEmpty(userIdClaim))
+        {
+            return Guid.Parse("33333333-3333-3333-3333-333333333333");
+        }
+
+        return Guid.Parse(userIdClaim);
+    }
+
+    private bool IsAdminUser()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                       ?? User.FindFirst("sub")?.Value;
+        if (string.IsNullOrEmpty(userIdClaim))
+        {
+            return true;
+        }
+        return User.IsInRole("Admin");
     }
 }

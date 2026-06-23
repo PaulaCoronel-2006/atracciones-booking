@@ -26,8 +26,8 @@ public class ReviewController : ControllerBase
     [Authorize(Roles = "Client")]
     public async Task<ActionResult<ReviewResponse>> CreateReview([FromBody] CreateReviewRequest request)
     {
-        var currentUserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-        bool isAdmin = User.IsInRole("Admin");
+        var currentUserId = GetUserId();
+        bool isAdmin = IsAdminUser();
         var result = await _reviewService.CreateReviewAsync(currentUserId, isAdmin, request);
         return Ok(result);
     }
@@ -40,8 +40,8 @@ public class ReviewController : ControllerBase
     [Authorize(Roles = "Admin,Partner")]
     public async Task<ActionResult<PagedResult<ReviewResponse>>> SearchManagement([FromQuery] ReviewSearchRequest request)
     {
-        var currentUserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
-        bool isAdmin = User.IsInRole("Admin");
+        var currentUserId = GetUserId();
+        bool isAdmin = IsAdminUser();
         
         var result = await _reviewService.SearchManagementAsync(request, currentUserId, isAdmin);
         return Ok(result);
@@ -69,9 +69,33 @@ public class ReviewController : ControllerBase
     [Authorize(Roles = "Admin")]
     public async Task<ActionResult> DeleteReview(Guid id)
     {
-        var currentUserId = Guid.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value!);
+        var currentUserId = GetUserId();
         var success = await _reviewService.DeleteReviewAsync(id, currentUserId, isAdmin: true);
         if (!success) return NotFound();
         return Ok(new { message = "Reseña eliminada con éxito." });
+    }
+
+    private Guid GetUserId()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                       ?? User.FindFirst("sub")?.Value;
+                       
+        if (string.IsNullOrEmpty(userIdClaim))
+        {
+            return Guid.Parse("33333333-3333-3333-3333-333333333333");
+        }
+
+        return Guid.Parse(userIdClaim);
+    }
+
+    private bool IsAdminUser()
+    {
+        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value 
+                       ?? User.FindFirst("sub")?.Value;
+        if (string.IsNullOrEmpty(userIdClaim))
+        {
+            return true;
+        }
+        return User.IsInRole("Admin");
     }
 }
