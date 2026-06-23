@@ -12,7 +12,6 @@ namespace Microservicios.Atracciones.Booking.API.Controllers.V1;
 /// </summary>
 [ApiController]
 [Route("api/v1/booking")]
-[Route("v2/booking")]
 [Authorize] 
 [Produces("application/json")]
 [AllowAnonymous]
